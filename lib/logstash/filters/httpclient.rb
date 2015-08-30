@@ -31,9 +31,7 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   config :password, :validate => :string, :default => ""
   # not implemented
   config :cacert, :validate => :path
-  # not implemented
   config :cert, :validate => :path
-  # not implemented
   config :key, :validate => :path
   # Not implemented
   config :reqtype, :validate => :string, :default => "Get"
@@ -52,15 +50,25 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   # Not implemented
   config :decodejson, :validate => :boolean, :default => false
   # the User Agent String to send
-  config :useragent, :validate => :string, :default => "logstash-filter-httpclient"
+  config :useragent, :validate => :string, :default => "HTTPClient/1.0"
+  # directly send request with username and password instead of
+  # testing -> 401 -> second request with username/password
+  config :force_basic_auth, :validate => :boolean, :default => false
 
   public
   def register
     require "httpclient"
     begin
-      @httpagent = HTTPClient.new(nil,@useragent,'',@base_url)
-      if @username
+      @httpagent = HTTPClient.new(:agent_name => @useragent,
+                                  :base_url => @base_url,
+                                  :force_basic_auth => @force_basic_auth)
+      # we do not support cookies 
+      @httpagent.cookie_manager = nil
+      if @username and @password
         @httpagent.set_auth(@base_url,@username,@password)
+      end
+      if @cert and @key
+        @httpagent.ssl_config.set_client_cert_file(@cert,@key)
       end
       # if @proto == "https"
       #   httpagent.use_ssl = true
