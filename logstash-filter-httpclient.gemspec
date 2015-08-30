@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
 
-  s.name            = 'logstash-filter-http'
+  s.name            = 'logstash-filter-httpclient'
   s.version         = '0.1.0'
   s.licenses        = ['Apache License (2.0)']
   s.summary         = "The httpclient filter to fetch data from additional sources"
