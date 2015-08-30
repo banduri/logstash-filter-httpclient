@@ -36,7 +36,7 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   config :reqtype, :validate => :string, :default => "Get"
   #relativ to base_url
   config :path, :validate => :string, :default => "/"
-  # Not implemented
+  # only simple kv is supported
   config :query, :validate => :hash
   # Not implemented
   config :proxy, :validate => :string
@@ -88,9 +88,13 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
     # check if id_field is present in event
     begin
       if @query
-        event[@target_field] = @httpagent.get_content(event.sprintf(@path),@query)
+        @query.each do |key,value|
+          query[key] = event.sprintf(value)
+        end
+        event[@target_field] = @httpagent.get_content(event.sprintf(@path),query)
       else
         event[@target_field] = @httpagent.get_content(event.sprintf(@path))
+      end
       filter_matched(event)
     rescue Exception => e
       @logger.warn("Unhandled exception",
