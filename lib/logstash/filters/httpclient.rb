@@ -29,7 +29,6 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   config :base_url, :validate => :string
   config :username, :validate => :string
   config :password, :validate => :string, :default => ""
-  # not implemented
   config :cacert, :validate => :path
   config :cert, :validate => :path
   config :key, :validate => :path
@@ -38,7 +37,7 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   #relativ to base_url
   config :path, :validate => :string, :default => "/"
   # Not implemented
-  config :parms, :validate => :hash
+  config :query, :validate => :hash
   # Not implemented
   config :proxy, :validate => :string
   # Not implemented
@@ -70,6 +69,11 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
       if @cert and @key
         @httpagent.ssl_config.set_client_cert_file(@cert,@key)
       end
+      if @cacert
+        # also the add_trust_ca removes all certs from the trust store
+        # but this could change.
+        @httpagent.ssl_config.clear_cert_store
+        @httpagent.ssl_config.add_trust_ca(@cacert)
       # if @proto == "https"
       #   httpagent.use_ssl = true
       # end
@@ -94,7 +98,10 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
     return unless filter?(event)
     # check if id_field is present in event
     begin
-      event[@target_field] = @httpagent.get(event.sprintf(@path)).body
+      if @query
+        event[@target_field] = @httpagent.get_content(event.sprintf(@path),@query)
+      else
+        event[@target_field] = @httpagent.get_content(event.sprintf(@path))
       filter_matched(event)
     rescue Exception => e
       @logger.warn("Unhandled exception",
