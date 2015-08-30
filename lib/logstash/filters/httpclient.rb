@@ -74,18 +74,6 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
         # but this could change.
         @httpagent.ssl_config.clear_cert_store
         @httpagent.ssl_config.add_trust_ca(@cacert)
-      # if @proto == "https"
-      #   httpagent.use_ssl = true
-      # end
-      # if @cert
-      #   cert = File.read(@cert)
-      #   httpagent.cert = OpenSSL::X509::Certificate.new(@cert)
-      #   key = File.read(@key)
-      #   httpagent.key = OpenSSL::PKey::PSA.new(@key)
-      # end
-      # if @cacert
-      #   httpagent.ca_file = @cacert
-      # end
     rescue Exception => e
       @logger.warn("Unhandled exception",
                    :exception => e, :stacktrace => e.backtrace) 
