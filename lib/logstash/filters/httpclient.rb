@@ -27,15 +27,17 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
 
   config :target_field, :validate => :string, :default => "httpclient"
   config :base_url, :validate => :string
-  # Not implemented
   config :username, :validate => :string
-  # Not implemented
   config :password, :validate => :string, :default => ""
+  # not implemented
   config :cacert, :validate => :path
+  # not implemented
   config :cert, :validate => :path
+  # not implemented
   config :key, :validate => :path
   # Not implemented
   config :reqtype, :validate => :string, :default => "Get"
+  #relativ to base_url
   config :path, :validate => :string, :default => "/"
   # Not implemented
   config :parms, :validate => :hash
@@ -49,6 +51,7 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   config :proxypass, :validate => :string
   # Not implemented
   config :decodejson, :validate => :boolean, :default => false
+  # the User Agent String to send
   config :useragent, :validate => :string, :default => "logstash-filter-httpclient"
 
   public
@@ -56,6 +59,9 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
     require "httpclient"
     begin
       @httpagent = HTTPClient.new(nil,@useragent,'',@base_url)
+      if @username
+        @httpagent.set_auth(@base_url,@username,@password)
+      end
       # if @proto == "https"
       #   httpagent.use_ssl = true
       # end
