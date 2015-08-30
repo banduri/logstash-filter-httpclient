@@ -74,6 +74,7 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
         # but this could change.
         @httpagent.ssl_config.clear_cert_store
         @httpagent.ssl_config.add_trust_ca(@cacert)
+      end
     rescue Exception => e
       @logger.warn("Unhandled exception",
                    :exception => e, :stacktrace => e.backtrace) 
