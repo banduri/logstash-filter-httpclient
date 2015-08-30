@@ -26,9 +26,7 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   #    http://localhost:8000/foobar/id_field
 
   config :target_field, :validate => :string, :default => "httpclient"
-  config :server, :valudate => :string, :default => "localhost"
-  config :port, :validate => :number, :default => 443
-  config :proto, :validate => :string, :default => "https"
+  config :base_url, :validate => :string
   # Not implemented
   config :username, :validate => :string
   # Not implemented
@@ -51,26 +49,25 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   config :proxypass, :validate => :string
   # Not implemented
   config :decodejson, :validate => :boolean, :default => false
+  config :useragent, :validate => :string, :default => "logstash-filter-httpclient"
 
   public
   def register
-    require "net/http"
-    require "net/https"
-    require "uri"
+    require "httpclient"
     begin
-      httpagent = Net::HTTP.new(@server,@port)
-      if @proto == "https"
-        httpagent.use_ssl = true
-      end
-      if @cert
-        cert = File.read(@cert)
-        httpagent.cert = OpenSSL::X509::Certificate.new(@cert)
-        key = File.read(@key)
-        httpagent.key = OpenSSL::PKey::PSA.new(@key)
-      end
-      if @cacert
-        httpagent.ca_file = @cacert
-      end
+      @httpagent = HTTPClient.new(nil,@useragent,'',@base_url)
+      # if @proto == "https"
+      #   httpagent.use_ssl = true
+      # end
+      # if @cert
+      #   cert = File.read(@cert)
+      #   httpagent.cert = OpenSSL::X509::Certificate.new(@cert)
+      #   key = File.read(@key)
+      #   httpagent.key = OpenSSL::PKey::PSA.new(@key)
+      # end
+      # if @cacert
+      #   httpagent.ca_file = @cacert
+      # end
     rescue Exception => e
       @logger.warn("Unhandled exception",
                    :exception => e, :stacktrace => e.backtrace) 
@@ -83,13 +80,11 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
     return unless filter?(event)
     # check if id_field is present in event
     begin
-      httpagent.request_get(event.sprintf(@path)){|res|
-        event[@target_field] = res.read_body
-      }
+      event[@target_field] = @httpagent.get(event.sprintf(@path)).body
       filter_matched(event)
     rescue Exception => e
       @logger.warn("Unhandled exception",
-                   :request => @httpagent,
+                   :httpagent => @httpagent,
                    :event => event,
                    :exception => e, :stacktrace => e.backtrace) 
     end

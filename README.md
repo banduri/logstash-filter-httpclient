@@ -1,3 +1,5 @@
+GEM_HOME=vendor/bundle/jruby/1.9/ GEM_PATH="" vendor/jruby/bin/jgem install httpclient
+
 # Logstash Plugin
 
 This is a plugin for [Logstash](https://github.com/elastic/logstash).
