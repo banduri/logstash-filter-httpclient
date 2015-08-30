@@ -26,12 +26,55 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
   #    http://localhost:8000/foobar/id_field
 
   config :target_field, :validate => :string, :default => "httpclient"
-  config :geturl, :validate => :string, :default => "http://localhost:8000/"
+  config :server, :valudate => :string, :default => "localhost"
+  config :port, :validate => :number, :default => 443
+  config :proto, :validate => :string, :default => "https"
+  # Not implemented
+  config :username, :validate => :string
+  # Not implemented
+  config :password, :validate => :string, :default => ""
+  config :cacert, :validate => :path
+  config :cert, :validate => :path
+  config :key, :validate => :path
+  # Not implemented
+  config :reqtype, :validate => :string, :default => "Get"
+  config :path, :validate => :string, :default => "/"
+  # Not implemented
+  config :parms, :validate => :hash
+  # Not implemented
+  config :proxy, :validate => :string
+  # Not implemented
+  config :proxyport, :validate => :string
+  # Not implemented
+  config :proxyuser, :validate => :string
+  # Not implemented
+  config :proxypass, :validate => :string
+  # Not implemented
+  config :decodejson, :validate => :boolean, :default => false
 
   public
   def register
     require "net/http"
+    require "net/https"
     require "uri"
+    begin
+      httpagent = Net::HTTP.new(@server,@port)
+      if @proto == "https"
+        httpagent.use_ssl = true
+      end
+      if @cert
+        cert = File.read(@cert)
+        httpagent.cert = OpenSSL::X509::Certificate.new(@cert)
+        key = File.read(@key)
+        httpagent.key = OpenSSL::PKey::PSA.new(@key)
+      end
+      if @cacert
+        httpagent.ca_file = @cacert
+      end
+    rescue Exception => e
+      @logger.warn("Unhandled exception",
+                   :exception => e, :stacktrace => e.backtrace) 
+    end
   end
 
   public
@@ -39,15 +82,16 @@ class LogStash::Filters::Restclient < LogStash::Filters::Base
     # no event -> nothing to do
     return unless filter?(event)
     # check if id_field is present in event
-    begin 
-      uri = URI.parse(event.sprintf(@geturl))
-      http = Net::HTTP.new(uri.host, uri.port)
-      request = Net::HTTP::Get.new(uri.request_uri)
-      response = http.request(request)
-      event[@target_field] = response.body
+    begin
+      httpagent.request_get(event.sprintf(@path)){|res|
+        event[@target_field] = res.read_body
+      }
       filter_matched(event)
     rescue Exception => e
-      @logger.warn("Unhandled exception", :request => request, :response => response, :exception => e, :stacktrace => e.backtrace) 
+      @logger.warn("Unhandled exception",
+                   :request => @httpagent,
+                   :event => event,
+                   :exception => e, :stacktrace => e.backtrace) 
     end
   end
 
